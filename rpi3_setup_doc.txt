@@ -1,0 +1,15 @@
+Raspberry Pi 3 Set Up Process:
+
+SSH into RPi 3:
+
+http://www.jeffgeerling.com/blog/2016/ssh-raspberry-pi-only-network-cable-using-os-xs-internet-sharing  
+
+Bluetooth:
+
+Follow this: https://www.hackster.io/inmyorbit/build-a-mobile-app-that-connects-to-your-rpi-3-using-ble-7a7c2c
+
+Until the node.js installation which has formatting errors
+
+wget https://nodejs.org/dist/v6.9.1/node-v6.9.1-linux-armv7l.tar.xz
+tar xfv node-v6.9.1-linux-armv7l.tar.xz
+cd node-v6.9.1-linux-armv7l/
