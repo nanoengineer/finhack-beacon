@@ -1,0 +1,6 @@
+sudo hciconfig hci0 up
+sudo hcitool -i hci0 cmd 0x08 0x0008 14 02 01 06 03 03 aa fe 0c 16 aa fe 10 00 03 65 72 66 2e 69 6f 00 00 00 00 00 00 00 00 00 00 00
+sudo hcitool -i hci0 cmd 0x08 0x0006 A0 00 A0 00 03 00 00 00 00 00 00 00 00 07 00
+sudo hcitool -i hci0 cmd 0x08 0x000a 01
+
+This is for broadcasting erf.io as an eddystone beacon on RPi3
