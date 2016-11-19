@@ -13,20 +13,20 @@ var util = require('util');
 // var UptimeCharacteristic = require('./characteristics/uptime');
 // var MemoryCharacteristic = require('./characteristics/memory');
 
-var StatusCharacteristic = require('./characteristics/status');
-var CoffeeTypeCharacteristic = require('./characteristics/coffetype');
-var ConfirmationCharacteristic = require('./characteristics/confirmation');
-var QueueIndexCharacteristic = require('./characteristics/queueindex');
+// var StatusCharacteristic = require('./characteristics/status');
+var CoffeeTypeCharacteristic = require('./characteristics/coffeetype');
+// var ConfirmationCharacteristic = require('./characteristics/confirmation');
+// var QueueIndexCharacteristic = require('./characteristics/queueindex');
 
 function SystemInformationService() {
 
   bleno.PrimaryService.call(this, {
     uuid: 'ff51b30e-d7e2-4d93-8842-a7c4a57dfb07',
     characteristics: [
-      new StatusCharacteristic(),
+      // new StatusCharacteristic(),
       new CoffeeTypeCharacteristic(),
-      new ConfirmationCharacteristic()
-      new QueueIndexCharacteristic()
+      // new ConfirmationCharacteristic()
+      // new QueueIndexCharacteristic()
     ]
   });
 };
