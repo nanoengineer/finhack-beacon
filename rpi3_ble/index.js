@@ -4,6 +4,8 @@ var SystemInformationService = require('./systeminformationservice');
 
 var systemInformationService = new SystemInformationService();
 
+bleno.name = 'TDSmartCoffee'
+
 bleno.on('stateChange', function(state) {
   console.log('on -> stateChange: ' + state);
 
