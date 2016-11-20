@@ -113,42 +113,21 @@ static void gap_params_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-// static void notif_subscr_handler(ble_nts_t * p_nts, bool notif_subscr)
-// {
-// 	uint32_t err_code;
-//     if (notif_subscr)
-//     {
-//       uint16_t            current_stop;
-//       ble_gatts_value_t   value = {.len = sizeof(uint16_t), .offset = 0, .p_value = (uint8_t*)(&current_stop)};
-//       err_code = sd_ble_gatts_value_get(m_conn_handle,
-//                                         m_nts.current_stop_char_handles.value_handle,
-//                                         &value);
-//
-//       APP_ERROR_CHECK(err_code);
-//       err_code = ble_nts_current_stop_notify(&m_nts, &current_stop);
-//       if (err_code != NRF_ERROR_INVALID_STATE)
-//       {
-//         APP_ERROR_CHECK(err_code);
-//       }
-//
-//       err_code = app_timer_start(m_coffee_timer_id, APP_TIMER_TICKS(6000, APP_TIMER_PRESCALER), NULL);
-//       APP_ERROR_CHECK(err_code);
-//     }
-//     else
-//     {
-//       app_timer_stop(m_coffee_timer_id);
-//     }
-// }
-
 static void confirm_write_handler(ble_nts_t * p_nts, bool confirm)
 {
 
   ret_code_t err_code;
 
-  if(confirm)
+  uint8_t            current_status;
+  ble_gatts_value_t   value = {.len = sizeof(uint8_t), .offset = 0, .p_value = (uint8_t*)(&current_status)};
+  err_code = sd_ble_gatts_value_get(m_conn_handle,
+                                    m_nts.status_char_handles.value_handle,
+                                    &value);
+
+  if(confirm && current_status == 0)
   {
     nrf_gpio_pin_set(LED_GREEN);
-    nrf_gpio_pin_clear(LED_YELLOW); //define yello later
+    nrf_gpio_pin_clear(LED_YELLOW);
 
     err_code = app_timer_start(m_coffee_timer_id, APP_TIMER_TICKS(6000, APP_TIMER_PRESCALER), NULL);
     APP_ERROR_CHECK(err_code);
