@@ -25,31 +25,45 @@ static void on_write(ble_nts_t * p_nts, ble_evt_t * p_ble_evt)
 {
     ble_gatts_evt_write_t * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
 
-    if ((p_evt_write->handle == p_nts->stop_req_char_handles.value_handle) &&
+    if ((p_evt_write->handle == p_nts->type_char_handles.value_handle) &&
         (p_evt_write->len == 1) &&
-        (p_nts->stop_req_write_handler != NULL))
+        (p_nts->type_write_handler != NULL))
     {
-        p_nts->stop_req_write_handler(p_nts, *(p_evt_write->data));
+        p_nts->type_write_handler(p_nts, *(p_evt_write->data));
     }
 
-    else if ((p_evt_write->handle == p_nts->help_req_char_handles.value_handle) &&
+    else if ((p_evt_write->handle == p_nts->confirmation_char_handles.value_handle) &&
         (p_evt_write->len == 1) &&
-        (p_nts->help_req_write_handler != NULL))
+        (p_nts->confirm_write_handler != NULL))
     {
-        p_nts->help_req_write_handler(p_nts, *(p_evt_write->data));
+        p_nts->confirm_write_handler(p_nts, *(p_evt_write->data));
     }
 
-    else if ((p_evt_write->handle == p_nts->current_stop_char_handles.cccd_handle) &&
+    else if ((p_evt_write->handle == p_nts->queue_char_handles.cccd_handle) &&
         (p_evt_write->len == 2) &&
-        (p_nts->notif_subscr_handler != NULL))
+        (p_nts->queue_subscr_handler != NULL))
     {
         if (*(p_evt_write->data))
         {
-          p_nts->notif_subscr_handler(p_nts, true);
+          p_nts->queue_subscr_handler(p_nts, true);
         }
         else
         {
-          p_nts->notif_subscr_handler(p_nts, false);
+          p_nts->queue_subscr_handler(p_nts, false);
+        }
+    }
+
+    else if ((p_evt_write->handle == p_nts->status_char_handles.cccd_handle) &&
+        (p_evt_write->len == 2) &&
+        (p_nts->status_subscr_handler != NULL))
+    {
+        if (*(p_evt_write->data))
+        {
+          p_nts->status_subscr_handler(p_nts, true);
+        }
+        else
+        {
+          p_nts->status_subscr_handler(p_nts, false);
         }
     }
 }
@@ -77,7 +91,7 @@ void ble_nts_on_ble_evt(ble_nts_t * p_nts, ble_evt_t * p_ble_evt)
     }
 }
 
-static uint32_t route_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
+static uint32_t type_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 {
     ble_gatts_char_md_t char_md;
     ble_gatts_attr_t    attr_char_value;
@@ -87,7 +101,7 @@ static uint32_t route_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_i
     memset(&char_md, 0, sizeof(char_md));
 
     char_md.char_props.read   = 1;
-    char_md.char_props.write  = 0;
+    char_md.char_props.write  = 1;
     char_md.p_char_user_desc  = NULL;
     char_md.p_char_pf         = NULL;
     char_md.p_user_desc_md    = NULL;
@@ -95,7 +109,7 @@ static uint32_t route_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_i
     char_md.p_sccd_md         = NULL;
 
     ble_uuid.type = p_nts->uuid_type;
-    ble_uuid.uuid = NTS_UUID_ROUTE_CHAR;
+    ble_uuid.uuid = NTS_UUID_TYPE_CHAR;
 
     memset(&attr_md, 0, sizeof(attr_md));
 
@@ -108,20 +122,22 @@ static uint32_t route_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_i
 
     memset(&attr_char_value, 0, sizeof(attr_char_value));
 
+    uint8_t default_coffee_type = 0;
+
     attr_char_value.p_uuid       = &ble_uuid;
     attr_char_value.p_attr_md    = &attr_md;
-    attr_char_value.init_len     = sizeof(p_nts_init->route_no);
+    attr_char_value.init_len     = sizeof(default_coffee_type);
     attr_char_value.init_offs    = 0;
-    attr_char_value.max_len      = sizeof(p_nts_init->route_no);
-    attr_char_value.p_value      = (uint8_t*)&(p_nts_init->route_no);
+    attr_char_value.max_len      = sizeof(default_coffee_type);
+    attr_char_value.p_value      = &(default_coffee_type);
 
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                            &char_md,
                                            &attr_char_value,
-                                           &p_nts->route_char_handles);
+                                           &p_nts->type_char_handles);
 }
 
-static uint32_t current_stop_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
+static uint32_t status_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 {
     ble_gatts_char_md_t char_md;
     ble_gatts_attr_md_t cccd_md;
@@ -147,7 +163,7 @@ static uint32_t current_stop_char_add(ble_nts_t * p_nts, const ble_nts_init_t * 
     char_md.p_sccd_md         = NULL;
 
     ble_uuid.type = p_nts->uuid_type;
-    ble_uuid.uuid = NTS_UUID_CURRENT_STOP_CHAR;
+    ble_uuid.uuid = NTS_UUID_STATUS_CHAR;
 
     memset(&attr_md, 0, sizeof(attr_md));
 
@@ -162,18 +178,18 @@ static uint32_t current_stop_char_add(ble_nts_t * p_nts, const ble_nts_init_t * 
 
     attr_char_value.p_uuid       = &ble_uuid;
     attr_char_value.p_attr_md    = &attr_md;
-    attr_char_value.init_len     = sizeof(p_nts_init->current_stop);
+    attr_char_value.init_len     = sizeof(p_nts_init->current_status);
     attr_char_value.init_offs    = 0;
-    attr_char_value.max_len      = sizeof(p_nts_init->current_stop);
-    attr_char_value.p_value      = (uint8_t*)&(p_nts_init->current_stop);
+    attr_char_value.max_len      = sizeof(p_nts_init->current_status);
+    attr_char_value.p_value      = (uint8_t*)&(p_nts_init->current_status);
 
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                            &char_md,
                                            &attr_char_value,
-                                           &p_nts->current_stop_char_handles);
+                                           &p_nts->status_char_handles);
 }
 
-static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
+static uint32_t confirmation_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 {
     ble_gatts_char_md_t char_md;
     ble_gatts_attr_md_t cccd_md;
@@ -189,9 +205,9 @@ static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
 
     memset(&char_md, 0, sizeof(char_md));
 
-    char_md.char_props.read   = 1;
+    char_md.char_props.read   = 0;
     char_md.char_props.write  = 1;
-    char_md.char_props.notify = 1;
+    char_md.char_props.notify = 0;
     char_md.p_char_user_desc  = NULL;
     char_md.p_char_pf         = NULL;
     char_md.p_user_desc_md    = NULL;
@@ -199,7 +215,7 @@ static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
     char_md.p_sccd_md         = NULL;
 
     ble_uuid.type = p_nts->uuid_type;
-    ble_uuid.uuid = NTS_UUID_STOP_REQ_CHAR;
+    ble_uuid.uuid = NTS_UUID_CONFIRMATION_CHAR;
 
     memset(&attr_md, 0, sizeof(attr_md));
 
@@ -224,10 +240,10 @@ static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                                &char_md,
                                                &attr_char_value,
-                                               &p_nts->stop_req_char_handles);
+                                               &p_nts->confirmation_char_handles);
 }
 
-static uint32_t help_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
+static uint32_t queue_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 {
     ble_gatts_char_md_t char_md;
     ble_gatts_attr_md_t cccd_md;
@@ -244,7 +260,7 @@ static uint32_t help_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
     memset(&char_md, 0, sizeof(char_md));
 
     char_md.char_props.read   = 1;
-    char_md.char_props.write  = 1;
+    char_md.char_props.write  = 0;
     char_md.char_props.notify = 1;
     char_md.p_char_user_desc  = NULL;
     char_md.p_char_pf         = NULL;
@@ -253,7 +269,7 @@ static uint32_t help_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
     char_md.p_sccd_md         = NULL;
 
     ble_uuid.type = p_nts->uuid_type;
-    ble_uuid.uuid = NTS_UUID_HELP_REQ_CHAR;
+    ble_uuid.uuid = NTS_UUID_QUEUE_CHAR;
 
     memset(&attr_md, 0, sizeof(attr_md));
 
@@ -266,19 +282,17 @@ static uint32_t help_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
 
     memset(&attr_char_value, 0, sizeof(attr_char_value));
 
-    uint8_t value_init = 0;
-
     attr_char_value.p_uuid       = &ble_uuid;
     attr_char_value.p_attr_md    = &attr_md;
-    attr_char_value.init_len     = sizeof(uint8_t);
+    attr_char_value.init_len     = sizeof(p_nts_init->current_queue_index);
     attr_char_value.init_offs    = 0;
-    attr_char_value.max_len      = sizeof(uint8_t);
-    attr_char_value.p_value      = &value_init;
+    attr_char_value.max_len      = sizeof(p_nts_init->current_queue_index);
+    attr_char_value.p_value      = (uint8_t*)&(p_nts_init->current_queue_index);
 
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                                &char_md,
                                                &attr_char_value,
-                                               &p_nts->help_req_char_handles);
+                                               &p_nts->queue_char_handles);
 }
 
 uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
@@ -288,9 +302,10 @@ uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 
     // Initialize service structure.
     p_nts->conn_handle       = BLE_CONN_HANDLE_INVALID;
-    p_nts->stop_req_write_handler = p_nts_init->stop_req_write_handler;
-    p_nts->help_req_write_handler = p_nts_init->help_req_write_handler;
-    p_nts->notif_subscr_handler = p_nts_init->notif_subscr_handler;
+    p_nts->type_write_handler = p_nts_init->type_write_handler;
+    p_nts->confirm_write_handler = p_nts_init->confirm_write_handler;
+    p_nts->status_subscr_handler = p_nts_init->status_subscr_handler;
+    p_nts->queue_subscr_handler = p_nts_init->queue_subscr_handler;
 
     // Add service.
     ble_uuid128_t base_uuid = {NTS_UUID_BASE};
@@ -304,32 +319,49 @@ uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
     VERIFY_SUCCESS(err_code);
 
     // Add characteristics.
-    err_code = route_char_add(p_nts, p_nts_init);
+    err_code = type_char_add(p_nts, p_nts_init);
     VERIFY_SUCCESS(err_code);
 
-    err_code = current_stop_char_add(p_nts, p_nts_init);
+    err_code = status_char_add(p_nts, p_nts_init);
     VERIFY_SUCCESS(err_code);
 
-    err_code = stop_req_char_add(p_nts, p_nts_init);
+    err_code = confirmation_char_add(p_nts, p_nts_init);
     VERIFY_SUCCESS(err_code);
 
-    err_code = help_req_char_add(p_nts, p_nts_init);
+    err_code = queue_char_add(p_nts, p_nts_init);
     VERIFY_SUCCESS(err_code);
 
     return NRF_SUCCESS;
 }
 
-uint32_t ble_nts_current_stop_notify(ble_nts_t * p_nts, uint16_t * p_current_stop)
+uint32_t ble_nts_queue_notify(ble_nts_t * p_nts, uint8_t * p_current_queue)
 {
     ble_gatts_hvx_params_t hvx_params;
-    uint16_t               length = sizeof(uint16_t);
+    uint16_t               length = sizeof(uint8_t);
 
     VERIFY_PARAM_NOT_NULL(p_nts);
 
     memset(&hvx_params, 0, sizeof(hvx_params));
 
-    hvx_params.handle = p_nts->current_stop_char_handles.value_handle;
-    hvx_params.p_data = (uint8_t *)p_current_stop;
+    hvx_params.handle = p_nts->queue_char_handles.value_handle;
+    hvx_params.p_data = (uint8_t *)p_current_queue;
+    hvx_params.p_len  = &length;
+    hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+
+    return sd_ble_gatts_hvx(p_nts->conn_handle, &hvx_params);
+}
+
+uint32_t ble_nts_status_notify(ble_nts_t * p_nts, uint8_t * p_status)
+{
+    ble_gatts_hvx_params_t hvx_params;
+    uint16_t               length = sizeof(uint8_t);
+
+    VERIFY_PARAM_NOT_NULL(p_nts);
+
+    memset(&hvx_params, 0, sizeof(hvx_params));
+
+    hvx_params.handle = p_nts->status_char_handles.value_handle;
+    hvx_params.p_data = p_status;
     hvx_params.p_len  = &length;
     hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
 

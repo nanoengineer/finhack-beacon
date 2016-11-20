@@ -69,13 +69,13 @@
 
 #define DEAD_BEEF                       0xDEADBEEF                                  /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
-#define LED_RED                         (22)
+#define LED_YELLOW                      (22)
 #define LED_GREEN                       (23)
 
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
 static ble_nts_t                        m_nts;
 
-APP_TIMER_DEF(m_stops_mock_timer_id);
+APP_TIMER_DEF(m_coffee_timer_id);
 
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
@@ -111,56 +111,68 @@ static void gap_params_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-static void notif_subscr_handler(ble_nts_t * p_nts, bool notif_subscr)
+// static void notif_subscr_handler(ble_nts_t * p_nts, bool notif_subscr)
+// {
+// 	uint32_t err_code;
+//     if (notif_subscr)
+//     {
+//       uint16_t            current_stop;
+//       ble_gatts_value_t   value = {.len = sizeof(uint16_t), .offset = 0, .p_value = (uint8_t*)(&current_stop)};
+//       err_code = sd_ble_gatts_value_get(m_conn_handle,
+//                                         m_nts.current_stop_char_handles.value_handle,
+//                                         &value);
+//
+//       APP_ERROR_CHECK(err_code);
+//       err_code = ble_nts_current_stop_notify(&m_nts, &current_stop);
+//       if (err_code != NRF_ERROR_INVALID_STATE)
+//       {
+//         APP_ERROR_CHECK(err_code);
+//       }
+//
+//       err_code = app_timer_start(m_coffee_timer_id, APP_TIMER_TICKS(6000, APP_TIMER_PRESCALER), NULL);
+//       APP_ERROR_CHECK(err_code);
+//     }
+//     else
+//     {
+//       app_timer_stop(m_coffee_timer_id);
+//     }
+// }
+
+static void confirm_write_handler(ble_nts_t * p_nts, bool confirm)
 {
-	uint32_t err_code;
-    if (notif_subscr)
-    {
-      uint16_t            current_stop;
-      ble_gatts_value_t   value = {.len = sizeof(uint16_t), .offset = 0, .p_value = (uint8_t*)(&current_stop)};
-      err_code = sd_ble_gatts_value_get(m_conn_handle,
-                                        m_nts.current_stop_char_handles.value_handle,
-                                        &value);
 
-      APP_ERROR_CHECK(err_code);
-      err_code = ble_nts_current_stop_notify(&m_nts, &current_stop);
-      if (err_code != NRF_ERROR_INVALID_STATE)
-      {
-        APP_ERROR_CHECK(err_code);
-      }
+  ret_code_t err_code;
 
-      err_code = app_timer_start(m_stops_mock_timer_id, APP_TIMER_TICKS(6000, APP_TIMER_PRESCALER), NULL);
-      APP_ERROR_CHECK(err_code);
-    }
-    else
-    {
-      app_timer_stop(m_stops_mock_timer_id);
-    }
-}
-
-static void help_request_write_handler(ble_nts_t * p_nts, bool help_requested)
-{
-  if(help_requested)
-  {
-    nrf_gpio_pin_set(LED_RED);
-  }
-  else
-  {
-    nrf_gpio_pin_clear(LED_RED);
-  }
-}
-
-static void stop_request_write_handler(ble_nts_t * p_nts, bool stop_requested)
-{
-  if(stop_requested)
+  if(confirm)
   {
     nrf_gpio_pin_set(LED_GREEN);
-  }
-  else
-  {
-    nrf_gpio_pin_clear(LED_GREEN);
+    nrf_gpio_pin_clear(LED_YELLOW); //define yello later
+
+    err_code = app_timer_start(m_coffee_timer_id, APP_TIMER_TICKS(6000, APP_TIMER_PRESCALER), NULL);
+    APP_ERROR_CHECK(err_code);
+
+    uint8_t status = 1; //busy
+    err_code = ble_nts_status_notify(&m_nts, &status);
+    APP_ERROR_CHECK(err_code);
+
   }
 }
+
+static void type_write_handler(ble_nts_t * p_nts, uint8_t type)
+{
+//don't need anything for demo
+}
+
+static void status_subscr_handler(ble_nts_t * p_nts, bool status_subscr)
+{
+//return variable for subscribing
+}
+
+static void queue_subscr_handler(ble_nts_t * p_nts, bool status_subscr)
+{
+//don't need anything for demo
+}
+
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
@@ -169,11 +181,12 @@ static void services_init(void)
     ble_nts_init_t nts_init;
 
     memset(&nts_init, 0, sizeof(nts_init));
-    nts_init.stop_req_write_handler = stop_request_write_handler;
-    nts_init.help_req_write_handler = help_request_write_handler;
-    nts_init.notif_subscr_handler = notif_subscr_handler;
-    nts_init.route_no = 7;
-    nts_init.current_stop = 2;
+    nts_init.type_write_handler = type_write_handler;
+    nts_init.confirm_write_handler = confirm_write_handler;
+    nts_init.status_subscr_handler = status_subscr_handler;
+    nts_init.queue_subscr_handler = queue_subscr_handler;
+    nts_init.current_status = 0;
+    nts_init.current_queue_index = 2;
 
     err_code = ble_nts_init(&m_nts, &nts_init);
     APP_ERROR_CHECK(err_code);
@@ -299,8 +312,9 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_DISCONNECTED:
             err_code = bsp_indication_set(BSP_INDICATE_IDLE);
             APP_ERROR_CHECK(err_code);
-            app_timer_stop(m_stops_mock_timer_id);
+            app_timer_stop(m_coffee_timer_id);
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
+            //TODO: figure out timer when disconnected
             break; // BLE_GAP_EVT_DISCONNECTED
 
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
@@ -531,41 +545,26 @@ static void power_manage(void)
 static void ext_led_init(void)
 {
   nrf_gpio_cfg_output(LED_GREEN);
-  nrf_gpio_cfg_output(LED_RED);
+  nrf_gpio_cfg_output(LED_YELLOW);
 }
 
-void stops_mock_timeout_handler(void * p_context)
+void coffee_timeout_handler(void * p_context)
 {
   ret_code_t          err_code;
-  uint16_t            current_stop;
-  ble_gatts_value_t   value = {.len = sizeof(uint16_t), .offset = 0, .p_value = (uint8_t*)(&current_stop)};
-  err_code = sd_ble_gatts_value_get(m_conn_handle,
-                                    m_nts.current_stop_char_handles.value_handle,
-                                    &value);
 
+  uint8_t status = 0; //free
+  err_code = ble_nts_status_notify(&m_nts, &status);
   APP_ERROR_CHECK(err_code);
 
-  if(current_stop <= 8)
-  {
-    current_stop++;
-  }
-  else
-  {
-    current_stop = 0;
-  }
-
-  err_code = ble_nts_current_stop_notify(&m_nts, &current_stop);
-  if (err_code != NRF_ERROR_INVALID_STATE)
-  {
-    APP_ERROR_CHECK(err_code);
-  }
+  nrf_gpio_pin_set(LED_YELLOW);
+  nrf_gpio_pin_clear(LED_GREEN);
 }
 
 static void timer_init(void)
 {
   uint32_t err_code;
   APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
-  err_code = app_timer_create(&m_stops_mock_timer_id, APP_TIMER_MODE_REPEATED, stops_mock_timeout_handler);
+  err_code = app_timer_create(&m_coffee_timer_id, APP_TIMER_MODE_SINGLE_SHOT, coffee_timeout_handler);
   APP_ERROR_CHECK(err_code);
 }
 /**@brief Application main function.
