@@ -1,0 +1,125 @@
+<html>
+<head>
+<script src="/static/sw.js"></script>
+<script src="/static/jquery-2.2.4.js"></script>
+<script src="/static/bootstrap-3.3.7.js"></script>
+<link rel="manifest" href="/static/manifest.json">
+</head>
+
+<body>
+
+<div id='g-sign_in_final-box' class='ai2html'>
+	<style type='text/css' media='screen,print'>
+		.g-artboard {
+			margin:0 auto;
+
+		}
+	</style>
+
+  <!-- Artboard: Artboard_1 -->
+	<div id='g-sign_in_final-Artboard_1' class='g-artboard g-artboard-v3 ' data-min-width='750'>
+    <a id="link1" class="transition" href="dashboard_existing_final">Link</a>
+    <a id="link2" class="transition" href="dashboard_final">Link</a>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    $("body").css("display", "none");
+
+    $("body").fadeIn(500);
+
+    $("a.transition").click(function(event){
+        event.preventDefault();
+        linkLocation = this.href;
+        $("body").fadeOut(500, redirectPage);
+    });
+
+    function redirectPage() {
+        window.location = linkLocation;
+    }
+
+});
+</script>
+
+	  <style type='text/css' media='screen,print'>
+			#g-sign_in_final-Artboard_1{
+				position:relative;
+				overflow:hidden;
+				width:750px;
+				width:90%;
+				height: auto;
+				animation: 3s ease-in 1s 2 reverse both paused slidein;
+			}
+			.g-aiAbs{
+				position:absolute;
+			}
+			.g-aiImg{
+				display:block;
+				width:100% !important;
+			}
+			#g-sign_in_final-Artboard_1 p{
+				font-family:nyt-franklin,arial,helvetica,sans-serif;
+				font-size:13px;
+				line-height:18px;
+				margin:0;
+			}
+
+			body {
+        		background-color:#E5E5E5;
+				display:: none;
+        	}
+
+
+			a#link1, a#link2, a#link3 , a#link4 , a#link5 {
+				display: block;
+				overflow: hidden;
+				position: absolute;
+				background: #00B41B;
+				text-indent: -9999px;
+				opacity: 0;
+			}
+			#link1 {
+				left: 8vw;
+				top: 95vw;
+				width: 78vw;
+				height: 10vw;
+
+			}
+			#link2 {
+				left: 8vw;
+				top: 112vw;
+				width: 78vw;
+				height: 10vw;
+			}
+
+			.g-aiPtransformed p { white-space: nowrap; }
+
+
+			html {
+				overflow-y:scroll;
+			}
+
+			.page {
+				display:block;
+				opacity:0;
+			}
+
+			.page.current {
+				display: block;
+				opacity: 0;
+			}
+
+		</style>
+		<div id='g-sign_in_final-Artboard_1-graphic'>
+			<img id='g-ai0-0'
+				class='g-aiImg'
+				src='static/sign_in_final-Artboard_1.svg'
+				/>
+		</div>
+  </div>
+
+</div>
+
+</body>
+
+
+</html>

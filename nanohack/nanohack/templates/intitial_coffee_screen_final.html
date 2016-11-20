@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+<link rel="manifest" href="/static/manifest.json">
+<script src="/static/sw.js"></script>
+<script src="/static/jquery-2.2.4.js"></script>
+<script src="/static/bootstrap-3.3.7.js"></script>
+<link rel="stylesheet" href="/static/bootstrap-3.3.7.css">
+
+<script type="text/javascript">
+
+var bluetoothDevice;
+var mainServer;
+var mainService;
+var coffeeTypeCharacteristic;
+var statusCharacteristic;
+var brewCoffeeCharacteristic;
+var queueCharacteristic;
+var sub_key;
+var connected; // bool whether you are connected
+
+// Shorthand for $( document ).ready()
+$(function() {
+		console.log( "ready!" );
+		subscribe();
+});
+
+function redirectPage() {
+		linkLocation = 'coffee_screen_final';
+		window.location = linkLocation;
+}
+
+function sendPushNotification(reg_id){
+		$.ajax({
+				url:'https://gcm-http.googleapis.com/gcm/send',
+				contentType: 'application/json',
+				type:'POST',
+				headers:{"Authorization": "key=AIzaSyC9qFKck3nRo2ydt7mfTughI0bKyDYfrMY"},
+				data: "{\"registration_ids\":[\""+ reg_id + "\"]}",
+				processData: false
+		})
+
+		$("body").fadeOut(2000, redirectPage);
+}
+
+function subscribe(){
+	if ('serviceWorker' in navigator) {
+		console.log('Service Worker is supported');
+		navigator.serviceWorker.register('/static/sw.js').then(function(reg) {
+			console.log('Service Worker is ready :^)', reg);
+			reg.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
+				console.log(sub);
+				sub_key = sub.endpoint.split('/')[5];
+			});
+			pushSubscription = sub_key;
+			console.log(sub_key);
+		}).catch(function(error) {
+			console.log('Service Worker error :^(', error);
+		});
+	}
+}
+
+function brewCoffee() {
+		console.log("attempting brew");
+    brewCoffeeCharacteristic.writeValue(new Uint8Array([1]));
+}
+
+function coffeeStatusChanged(event){
+        coffeeStatus = event.target.value.getUint8(0);
+
+        if (coffeeStatus == 0) {
+          // coffee is idle
+          console.log("idle")
+        } else if (coffeeStatus == 1) {
+          // coffee is brewing
+          console.log("brewing")
+        } else {
+          // coffee is done
+          // send push notification
+          console.log("push sub");
+          console.log(sub_key);
+          sendPushNotification(sub_key);
+          console.log("done");
+        }
+  }
+
+function beaconConnect(){
+        navigator.bluetooth.requestDevice({
+          filters: [{
+            services: ['87de0001-51b5-43c3-9ccb-993004dd54aa']
+          }]
+        })
+        .then(function(device){
+            bluetoothDevice = device;
+            console.log(device);
+            return device.gatt.connect();
+        })
+        .then(function(server){
+          mainServer = server;
+          console.log(server);
+          return server.getPrimaryService('87de0001-51b5-43c3-9ccb-993004dd54aa');
+        })
+        .then(function(service) {
+            mainService = service;
+            console.log(service);
+            return Promise.all([
+                service.getCharacteristic('87de0002-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                      coffeeTypeCharacteristic = characteristic;
+                }),
+                service.getCharacteristic('87de0003-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    statusCharacteristic = characteristic;
+                    return statusCharacteristic.startNotifications();
+                })
+                .then(function(){
+                    statusCharacteristic.addEventListener('characteristicvaluechanged', coffeeStatusChanged);
+                }),
+                service.getCharacteristic('87de0004-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    brewCoffeeCharacteristic = characteristic;
+                }),
+                service.getCharacteristic('87de0005-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    queueCharacteristic = characteristic;
+                })
+								.then(function(){
+									connected = true;
+									document.getElementById("brewbutton").disabled = false;
+								})
+            ])
+        })
+}
+
+
+
+</script>
+</head>
+
+		<style type='text/css' media='screen,print'>
+		/*.g-artboard {
+			margin:0 auto;
+		}*/
+		body {
+						background-color:#E5E5E5;
+					}
+
+			/*.td-logo {
+				height:10vw;
+				width:height;
+			}*/
+
+		 	.top-bar {
+				margin-left: 5vw;
+				margin-right: 5vw;
+				padding-top: 8vw;
+				background-color: #1A5436;
+				width: 90vw;
+	      height: 20vw;
+				text-align: center;
+			}
+
+			.waiting-text {
+				color: #1A5436;
+				font-size: 30pt;
+				font-size: 4vw;
+				font-family: Verdana
+				margin-top: 10px;
+				margin-left: 10vw;
+			}
+
+			.coffee-cup {
+				margin-top: 15px;
+				margin-left: 25vw;
+				margin-right: 25vw;
+				width:25vw;
+				height:width;
+			}
+
+			.want-to-brew-text {
+				color: #1A5436;
+				font-size: 36pt;
+				font-size: 4vw;
+				font-family: Verdana
+				padding-top: 10px;
+			}
+
+			.coffee-choices {
+				background-color: #1A5436;
+				width: 90vw;
+			}
+
+			.brew-button {
+				background-color: #1A5436;
+				margin: auto;
+				height: 10vw;
+				width: 80vw;
+				font-size: 4vw;
+			}
+
+			.connect-button {
+				background-color: #1A5436;
+				margin: auto;
+				height: 10vw;
+				width: 80vw;
+				font-size: 4vw;
+			}
+
+			.white-container {
+				margin-left: 5vw;
+				margin-right: 5vw;
+				padding: 5vw;
+				background-color: #ffffff;
+				width: 90vw;
+				text-align: center;
+			}
+
+		</style>
+
+	<body>
+
+	<div class="top-bar">
+		<!-- <img class="td-logo" src="static/td_white.svg"> -->
+	</div>
+
+	<div class="waiting-text">While you are waiting...</div>
+
+	<div class="white-container">
+			<img class="coffee-cup" src="static/coffee.svg">
+
+			<div class="want-to-brew-text">Would you like some coffee?</div>
+
+			<button type="button" class="btn btn-success connect-button" onclick="beaconConnect()">
+				Connect
+				</button>
+			</br>
+			<!-- grey out before connected -->
+			<button id="brewbutton" type="button" class="btn btn-success brew-button" disabled=true onclick="brewCoffee()">Brew</button>
+
+	</div>
+
+</body>
+
+
+</html>
