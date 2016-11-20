@@ -1,0 +1,1 @@
+Downloads/OpenOCD-0.9.0-arduino/bin/openocd -s Downloads/OpenOCD-0.9.0-arduino/share/openocd/scripts -f Downloads/OpenOCD-0.9.0-arduino/share/openocd/scripts/board/arduino_primo.cfg -c "program Programming/Repos/finhack-beacon/fw/pca10040/s132/armgcc/_build/nrf52832_xxaa.hex verify reset exit"

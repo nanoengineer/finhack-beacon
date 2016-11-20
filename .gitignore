@@ -72,3 +72,9 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Eclipse
+*.project
+*.cproject
+_build/
+
