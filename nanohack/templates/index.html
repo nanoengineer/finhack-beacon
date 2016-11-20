@@ -1,0 +1,267 @@
+<html>
+<head>
+<script src="/static/sw.js"></script>
+<script src="/static/jquery-2.2.4.js"></script>
+<script src="/static/bootstrap-3.3.7.js"></script>
+<link rel="manifest" href="/static/manifest.json">
+
+<script type="text/javascript">
+    var bluetoothDevice;
+    var mainServer;
+    var mainService;
+    var coffeeTypeCharacteristic;
+    var statusCharacteristic;
+    var brewCoffeeCharacteristic;
+    var queueCharacteristic;
+    var sub_key;
+
+    // Shorthand for $( document ).ready()
+    $(function() {
+        console.log( "ready!" );
+        subscribe();
+        //beaconConnect();
+    });
+
+    function sendPushNotification(reg_id){
+        $.ajax({
+            url:'https://gcm-http.googleapis.com/gcm/send',
+            contentType: 'application/json',
+            type:'POST',
+            headers:{"Authorization": "key=AIzaSyC9qFKck3nRo2ydt7mfTughI0bKyDYfrMY"},
+            data: "{\"registration_ids\":[\""+ reg_id + "\"]}",
+            processData: false
+        })
+    }
+
+    function subscribe(){
+            if ('serviceWorker' in navigator) {
+              console.log('Service Worker is supported');
+              navigator.serviceWorker.register('/static/sw.js').then(function(reg) {
+                console.log('Service Worker is ready :^)', reg);
+                reg.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
+                  // console.log(sub_key);
+                  sub_key = sub.endpoint.split('/')[5];
+                });
+                pushSubscription = sub_key;
+                console.log(sub_key);
+              }).catch(function(error) {
+                console.log('Service Worker error :^(', error);
+              });
+            }
+        }
+
+function beaconConnect(){
+        navigator.bluetooth.requestDevice({
+          filters: [{
+            services: ['87de0001-51b5-43c3-9ccb-993004dd54aa']
+          }]
+        })
+        .then(function(device){
+            bluetoothDevice = device;
+            console.log(device);
+            return device.gatt.connect();
+        })
+        .then(function(server){
+          mainServer = server;
+          console.log(server);
+          return server.getPrimaryService('87de0001-51b5-43c3-9ccb-993004dd54aa');
+        })
+        .then(function(service) {
+            mainService = service;
+            console.log(service);
+            return Promise.all([
+                service.getCharacteristic('87de0002-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                      coffeeTypeCharacteristic = characteristic;
+                }),
+                service.getCharacteristic('87de0003-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    statusCharacteristic = characteristic;
+                    return statusCharacteristic.startNotifications();
+                })
+                .then(function(){
+                    statusCharacteristic.addEventListener('characteristicvaluechanged', coffeeStatusChanged);
+                }),
+                service.getCharacteristic('87de0004-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    brewCoffeeCharacteristic = characteristic;
+                }),
+                service.getCharacteristic('87de0005-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    queueCharacteristic = characteristic;
+                })
+            ])
+        })
+        // .then(function() {
+        //     routeCharacteristic.readValue().then(function(value){
+        //         getStops((new Uint16Array(value.buffer))[0])
+        //     });
+        //     $('.stop').hide();
+        //     $('.onboard').show();
+        // })
+}
+function brewCoffee(characteristic) {
+    brewCoffeeCharacteristic.writeValue(new Uint8Array([1]));
+}
+
+function coffeeStatusChanged(event){
+        coffeeStatus = event.target.value.getUint8(0);
+
+        if (coffeeStatus == 0) {
+          // coffee is idle
+          console.log("idle")
+        } else if (coffeeStatus == 1) {
+          // coffee is brewing
+          console.log("brewing")
+        } else {
+          // coffee is done
+          // send push notification
+          console.log("push sub");
+          console.log(sub_key);
+          sendPushNotification(sub_key);
+          console.log("done");
+        }
+
+    }
+
+</script>
+</head>
+
+
+<body>
+
+<div class="container">
+  <h2>Button Sizes</h2>
+  <button type="button" class="btn btn-primary btn-lg" onclick="beaconConnect()">Large</button>
+  <button type="button" class="btn btn-primary btn-md">Medium</button>
+  <button type="button" class="btn btn-primary btn-sm">Small</button>
+  <button type="button" class="btn btn-primary btn-xs">XSmall</button>
+</div>
+
+<!-- neeeeeeeew stuuuuuf -->
+
+<div id='g-sign_in_final-box' class='ai2html'>
+	<!-- Generated by ai2html v0.61 - 2016-11-19 - 21:56 -->
+	<!-- ai file: sign_in_final -->
+
+	<style type='text/css' media='screen,print'>
+		.g-artboard {
+			margin:0 auto;
+
+		}
+	</style>
+	<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+
+  <!-- Artboard: Artboard_1 -->
+	<div id='g-sign_in_final-Artboard_1' class='g-artboard g-artboard-v3 ' data-min-width='750'>
+    <a id="link1" class="transition" href="dashboard_existing_final">Link</a>
+    <a id="link2" class="transition" href="intitial_coffee_screen_final">Link</a>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    $("body").css("display", "none");
+
+    $("body").fadeIn(500);
+
+    $("a.transition").click(function(event){
+        event.preventDefault();
+        linkLocation = this.href;
+        $("body").fadeOut(500, redirectPage);
+    });
+
+    function redirectPage() {
+        window.location = linkLocation;
+    }
+
+});
+</script>
+
+	  <style type='text/css' media='screen,print'>
+			#g-sign_in_final-Artboard_1{
+				position:relative;
+				overflow:hidden;
+				width:750px;
+				width:90%;
+				height: auto;
+				animation: 3s ease-in 1s 2 reverse both paused slidein;
+			}
+			.g-aiAbs{
+				position:absolute;
+			}
+			.g-aiImg{
+				display:block;
+				width:100% !important;
+			}
+			#g-sign_in_final-Artboard_1 p{
+				font-family:nyt-franklin,arial,helvetica,sans-serif;
+				font-size:13px;
+				line-height:18px;
+				margin:0;
+			}
+
+			body {
+        		background-color:#E5E5E5;
+				display:: none;
+        	}
+
+
+			a#link1, a#link2, a#link3 , a#link4 , a#link5 {
+				display: block;
+				overflow: hidden;
+				position: absolute;
+				background: #00B41B;
+				text-indent: -9999px;
+				opacity: 0;
+			}
+			#link1 {
+				left: 8vw;
+				top: 95vw;
+				width: 78vw;
+				height: 10vw;
+
+			}
+			#link2 {
+				left: 8vw;
+				top: 112vw;
+				width: 78vw;
+				height: 10vw;
+			}
+
+			.g-aiPtransformed p { white-space: nowrap; }
+
+
+			html {
+				overflow-y:scroll;
+			}
+
+			.page {
+				display:block;
+				opacity:0;
+			}
+
+			.page.current {
+				display: block;
+				opacity: 0;
+			}
+
+		</style>
+		<div id='g-sign_in_final-Artboard_1-graphic'>
+			<img id='g-ai0-0'
+				class='g-aiImg'
+				src='static/sign_in_final-Artboard_1.svg'
+				/>
+		</div>
+  </div>
+
+  <!-- End ai2html - 2016-11-19 - 21:56 -->
+</div>
+
+
+
+</body>
+
+<!-- <a class="btn btn-default">
+    <div style="line-height:60px;" onclick="beaconConnect()">Connect me with my bus </div>
+</a> -->
+
+</html>
