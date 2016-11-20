@@ -71,9 +71,11 @@
 
 #define LED_YELLOW                      (22)
 #define LED_GREEN                       (23)
+#define LED_BLUE                        (24)
 
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
 static ble_nts_t                        m_nts;
+static bool                             m_is_status_subscribed;
 
 APP_TIMER_DEF(m_coffee_timer_id);
 
@@ -152,9 +154,11 @@ static void confirm_write_handler(ble_nts_t * p_nts, bool confirm)
     APP_ERROR_CHECK(err_code);
 
     uint8_t status = 1; //busy
-    err_code = ble_nts_status_notify(&m_nts, &status);
-    APP_ERROR_CHECK(err_code);
-
+    if(m_is_status_subscribed)
+    {
+      err_code = ble_nts_status_notify(&m_nts, &status);
+      APP_ERROR_CHECK(err_code);
+    }
   }
 }
 
@@ -165,7 +169,7 @@ static void type_write_handler(ble_nts_t * p_nts, uint8_t type)
 
 static void status_subscr_handler(ble_nts_t * p_nts, bool status_subscr)
 {
-//return variable for subscribing
+    m_is_status_subscribed = status_subscr;
 }
 
 static void queue_subscr_handler(ble_nts_t * p_nts, bool status_subscr)
@@ -477,7 +481,15 @@ void bsp_event_handler(bsp_event_t event)
                 }
             }
             break;
+        case BSP_EVENT_KEY_0: //On Button 1 press
+            nrf_gpio_pin_set(LED_YELLOW);
+            nrf_gpio_pin_clear(LED_BLUE);
 
+            uint8_t status = 0;
+            err_code = ble_nts_status_notify(&m_nts, &status);
+            APP_ERROR_CHECK(err_code);
+
+            break;
         default:
             break;
     }
@@ -546,17 +558,19 @@ static void ext_led_init(void)
 {
   nrf_gpio_cfg_output(LED_GREEN);
   nrf_gpio_cfg_output(LED_YELLOW);
+  nrf_gpio_cfg_output(LED_BLUE);
+  nrf_gpio_pin_set(LED_YELLOW);
 }
 
 void coffee_timeout_handler(void * p_context)
 {
   ret_code_t          err_code;
 
-  uint8_t status = 0; //free
+  uint8_t status = 2; //free
   err_code = ble_nts_status_notify(&m_nts, &status);
   APP_ERROR_CHECK(err_code);
 
-  nrf_gpio_pin_set(LED_YELLOW);
+  nrf_gpio_pin_set(LED_BLUE);
   nrf_gpio_pin_clear(LED_GREEN);
 }
 
