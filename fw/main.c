@@ -143,7 +143,24 @@ static void confirm_write_handler(ble_nts_t * p_nts, bool confirm)
 
 static void type_write_handler(ble_nts_t * p_nts, uint8_t type)
 {
-//don't need anything for demo
+    switch (type) {
+      case 0:
+        //Onboard LEDs are inverted polarity
+        nrf_gpio_pin_clear(LED_2);
+        nrf_gpio_pin_set(LED_3);
+        nrf_gpio_pin_set(LED_4);
+        break;
+      case 1:
+        nrf_gpio_pin_clear(LED_3);
+        nrf_gpio_pin_set(LED_2);
+        nrf_gpio_pin_set(LED_4);
+        break;
+      case 2:
+        nrf_gpio_pin_clear(LED_4);
+        nrf_gpio_pin_set(LED_3);
+        nrf_gpio_pin_set(LED_2);
+        break;
+    }
 }
 
 static void status_subscr_handler(ble_nts_t * p_nts, bool status_subscr)
